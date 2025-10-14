@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import { META_THEME_COLORS } from "@/config/site";
 
 export function useMetaColor() {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme(); 
 
   const metaColor = React.useMemo(() => {
     return resolvedTheme !== "dark" 

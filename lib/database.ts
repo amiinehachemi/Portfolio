@@ -8,7 +8,7 @@ const connectToDatabase = async () => {
   if (connectionState === 1) {
     console.log("Database connection has already been established.");
     return;
-  }
+  } 
 
   if (connectionState === 2) {
     console.log("Establishing database connection...");
