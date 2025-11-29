@@ -5,7 +5,10 @@ import {
 } from '@/components/page-header';
 import Pager from '@/components/pager';
 
+
 const AboutMePage = () => {
+
+  
   return (
     <>
       <PageHeader>

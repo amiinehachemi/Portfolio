@@ -44,13 +44,16 @@ export async function getVectorStore(): Promise<PineconeStore> {
   }
 
   const embeddings = new OpenAIEmbeddings({
+    model: 'text-embedding-3-large',
     openAIApiKey: ragConfig.model.apiKey,
+    dimensions:256
   });
 
   const index = client.Index(ragConfig.pinecone.indexName);
 
   vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
     pineconeIndex: index,
+    
   });
 
   return vectorStore;

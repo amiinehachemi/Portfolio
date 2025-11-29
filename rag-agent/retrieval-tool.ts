@@ -35,6 +35,8 @@ export async function createRetrievalTool() {
           })
           .join('\n\n---\n\n');
 
+          console.log('Retrieval results:', formattedResults);
+
         return `Retrieved ${results.length} relevant document(s):\n\n${formattedResults}`;
       } catch (error) {
         console.error('Retrieval error:', error);

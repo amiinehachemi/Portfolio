@@ -61,7 +61,7 @@ async function exampleInsertCustomData() {
  * Example 3: Insert a single long text document (RECOMMENDED FOR YOUR USE CASE)
  * This is the easiest way to insert your long string
  */
-async function exampleInsertSingleText() {
+export async function exampleInsertSingleText() {
   console.log('Example 3: Inserting single text document...\n');
   
   // REPLACE THIS WITH YOUR ACTUAL LONG STRING
@@ -540,7 +540,7 @@ exampleInsertSingleText(); // <-- Use this one for a single long string
 // If running directly
 if (require.main === module) {
   console.log('🚀 Starting data insertion examples...\n');
-  exampleInsertDummyData()
+  exampleInsertSingleText()
     .then(() => {
       console.log('\n✅ Example completed successfully!');
       process.exit(0);
