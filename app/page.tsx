@@ -14,17 +14,12 @@ const IntroductionPage = async () => {
   return (
     <>
       <PageHeader>
-        <PageHeaderHeading>Aditya Domle</PageHeaderHeading>
+        <PageHeaderHeading>Amine Hachemi</PageHeaderHeading>
         <PageHeaderHeading className="mt-2 text-muted-foreground">
-          A coder by day, problem-solver by night!
+          Building Scalable AI Solutions And Backend Platforms
         </PageHeaderHeading>
         <PageHeaderDescription>
-          I am a dedicated Software Engineer specializing in full-stack
-          application development. I enjoy crafting responsive web solutions
-          using modern technologies like Next.js, React, Tailwind CSS, Node.js,
-          Express, and MongoDB, while also applying DevOps practices, continuously
-          aiming to deliver high-quality, comprehensive, user-centric software solutions.
-        </PageHeaderDescription>
+        For a while now I’ve been leading the technical direction behind a customer service automation platform at Intelswift. My work sits at the intersection of backend architecture and AI, ensuring the systems we build are both powerful and dependable. I work across the full stack with a strong focus on scalable backend systems, including microservices, API design, and backend architecture. I also contribute to frontend interfaces when needed, always aiming for clean design, reliable performance, and smooth communication across components. Along the way, I’ve helped deliver this platform to major pilots and high value clients, making sure it can handle the scale and expectations of large organizations.        </PageHeaderDescription>
         <PageActions>
           <Button asChild size="sm" className="rounded-md">
             <Link href={siteConfig.links.resume} target="_blank">

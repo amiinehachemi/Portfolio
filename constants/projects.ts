@@ -77,8 +77,8 @@ export const projects = [
     ],
     feedback: true,
     links: {
-      live: "https://aadi.is-a.dev",
-      github: "https://github.com/adityadomle/My-Portfolio",
+      live: "https://amine.is-a.dev",
+      github: "https://github.com/amiinehachemi",
     },
   },
   {

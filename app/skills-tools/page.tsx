@@ -14,13 +14,15 @@ const SkillsToolsPage = () => {
       <PageHeader>
         <PageHeaderHeading>Skills & Tools</PageHeaderHeading>
         <PageHeaderHeading className="mt-2 text-muted-foreground">
-          Learned by coding all night and debugging all day!
+        Mastered new tools faster than deadlines arrived, since great products do not wait.
         </PageHeaderHeading>
         <PageHeaderDescription>
-          As a full-stack Software Engineer, I specialize in building scalable
-          web applications using modern technologies such as Next.js, React, and
-          Tailwind CSS. I'm also expanding my expertise into DevOps and cloud
-          practices to create efficient, maintainable, robust web solutions.
+        I built my skills by working on systems that needed to handle real pressure.
+         Over time, I moved from writing small features to shaping the architecture behind a large customer service platform at Intelswift, 
+         one used by high value clients like banks and major retailers. Along the way, I learned how to design microservices,
+          build reliable APIs, work with vector databases, and use AI frameworks like LangChain to create smarter, 
+          faster automation. I still enjoy frontend work when it helps complete the picture,
+           but most of my focus goes into making complex systems feel simple, stable, and ready for real world demands.
         </PageHeaderDescription>
       </PageHeader>
 

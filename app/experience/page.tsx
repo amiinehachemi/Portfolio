@@ -16,13 +16,7 @@ const ExperiencePage = () => {
           You need it to get the job, but the job’s what gives it!
         </PageHeaderHeading>
         <PageHeaderDescription>
-          Throughout my journey as a developer, I have had the opportunity to
-          work with cutting-edge technologies while also mastering the fine art
-          of debugging at 2 AM. From building dynamic web applications to
-          deciphering cryptic error messages, my experience has been a mix of
-          structured learning and spontaneous problem-solving. Each project and
-          internship has sharpened my ability to write clean code, collaborate
-          effectively, and most importantly—fix bugs before they fix me.
+        My path in tech has been shaped by curiosity, long nights of figuring things out, and the need to deliver products that actually work. I learned new tools because real projects demanded it and clients were counting on solid results. From building applications that handle real volume to solving problems no tutorial covers, each challenge sharpened how I think, how I design systems, and how I approach teamwork. Every step taught me how to turn problems into working solutions that people can trust.
         </PageHeaderDescription>
       </PageHeader>
 
