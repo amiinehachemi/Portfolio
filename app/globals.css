@@ -186,6 +186,40 @@
   .safe-area-top {
     padding-top: max(0.75rem, env(safe-area-inset-top));
   }
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Touch action utilities for mobile */
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Prevent text selection on touch */
+  .select-touch-none {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* iOS momentum scrolling */
+  .-webkit-overflow-scrolling-touch {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile viewport height fix - accounts for browser chrome */
+  .h-dvh {
+    height: 100dvh;
+  }
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+  .max-h-dvh {
+    max-height: 100dvh;
+  }
 
   .border-grid {
     @apply border-dashed border-border/50 dark:border-border;
