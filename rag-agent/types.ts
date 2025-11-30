@@ -8,6 +8,12 @@ export interface PageSuggestion {
   description?: string;
 }
 
+export interface PerformanceMetrics {
+  totalTimeMs: number;
+  retrievalTimeMs?: number;
+  modelTimeMs?: number;
+}
+
 export interface RAGQueryResult {
   answer: string;
   suggestedPages?: PageSuggestion[];
@@ -15,6 +21,7 @@ export interface RAGQueryResult {
     content: string;
     metadata?: Record<string, unknown>;
   }>;
+  performance?: PerformanceMetrics;
 }
 
 export interface RAGAgentConfig {
@@ -22,4 +29,9 @@ export interface RAGAgentConfig {
   temperature?: number;
   topK?: number;
 }
+
+// Shared state for passing retrieval metrics
+export const performanceState = {
+  lastRetrievalTimeMs: 0,
+};
 

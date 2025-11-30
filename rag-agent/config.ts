@@ -26,7 +26,7 @@ export const ragConfig = {
   // Model configuration
   model: {
     provider: process.env.LLM_PROVIDER || 'openai',
-    modelName: process.env.LLM_MODEL_NAME || 'gpt-4o-mini',
+    modelName: process.env.LLM_MODEL_NAME || 'gpt-4.1-mini',
     apiKey: process.env.OPENAI_API_KEY || '',
     temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
   },

@@ -8,6 +8,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { createRetrievalTool } from './retrieval-tool';
 import { ragConfig } from './config';
 import type { RAGQueryResult, RAGAgentConfig } from './types';
+import { performanceState } from './types';
 import { suggestPages } from '@/lib/page-suggestions';
 
 let agentInstance: Awaited<ReturnType<typeof createAgent>> | null = null;
@@ -53,7 +54,20 @@ Your role:
 3. Offer summaries when helpful and keep responses shorter than a full paragraph
 4. Give detailed information, but in compact form using short sentences or bullet points
 5. If information is missing from the knowledge base, say so politely and guide the user to explore the portfolio pages
-6. Highlight Amine's relevant expertise, achievements, and technologies when appropriate`,
+6. Highlight Amine's relevant expertise, achievements, and technologies when appropriate
+
+FORMATTING RULES (IMPORTANT):
+- Always format your responses using Markdown syntax
+- Use **bold** for emphasis on key terms, skills, or achievements
+- Use bullet points (- or *) for lists
+- Use ### for section headers when organizing information
+- Use \`backticks\` for technical terms, technologies, and code
+- Use > for notable quotes or highlights
+- Keep paragraphs short and scannable
+- Example format:
+  ### Skills
+  - **Backend**: \`Node.js\`, \`TypeScript\`, microservices
+  - **AI/ML**: RAG, vector databases, LLM integrations`,
   });
 
   return agentInstance;
@@ -67,8 +81,19 @@ export async function queryRAGAgent(
   config?: RAGAgentConfig
 ): Promise<RAGQueryResult> {
   try {
-    const agent = await initializeRAGAgent(config);
+    // Start timing total query
+    const totalStart = performance.now();
+    
+    // Reset retrieval time tracking
+    performanceState.lastRetrievalTimeMs = 0;
 
+    console.log(`\n🚀 [PERFORMANCE] Starting RAG query: "${question.substring(0, 50)}${question.length > 50 ? '...' : ''}"`);
+
+    const agent = await initializeRAGAgent(config);
+    const initTime = performance.now() - totalStart;
+    console.log(`⏱️  [PERFORMANCE] Agent Init Time: ${initTime.toFixed(2)}ms`);
+
+    const invokeStart = performance.now();
     const result = await agent.invoke({
       messages: [
         {
@@ -77,6 +102,19 @@ export async function queryRAGAgent(
         },
       ],
     });
+    const invokeTime = performance.now() - invokeStart;
+
+    // Calculate total time
+    const totalTimeMs = performance.now() - totalStart;
+    const retrievalTimeMs = performanceState.lastRetrievalTimeMs;
+    const modelTimeMs = invokeTime - retrievalTimeMs;
+
+    // Log performance summary
+    console.log(`\n📊 ========== PERFORMANCE SUMMARY ==========`);
+    console.log(`⏱️  Total Time:       ${totalTimeMs.toFixed(2)}ms`);
+    console.log(`🔍 Retrieval Time:   ${retrievalTimeMs.toFixed(2)}ms (${((retrievalTimeMs / totalTimeMs) * 100).toFixed(1)}%)`);
+    console.log(`🤖 Model Time:       ${modelTimeMs.toFixed(2)}ms (${((modelTimeMs / totalTimeMs) * 100).toFixed(1)}%)`);
+    console.log(`📊 ==========================================\n`);
 
     // Extract the final answer from the messages
     const lastMessage = result.messages[result.messages.length - 1];
@@ -89,6 +127,11 @@ export async function queryRAGAgent(
 
     const queryResult: RAGQueryResult = {
       answer,
+      performance: {
+        totalTimeMs: Math.round(totalTimeMs),
+        retrievalTimeMs: Math.round(retrievalTimeMs),
+        modelTimeMs: Math.round(modelTimeMs),
+      },
     };
 
     if (suggestedPages.length > 0) {
@@ -112,9 +155,17 @@ export async function* streamRAGAgent(
   config?: RAGAgentConfig
 ): AsyncGenerator<string, void, unknown> {
   try {
+    // Start timing
+    const streamStart = performance.now();
+    performanceState.lastRetrievalTimeMs = 0;
+    let firstChunkTime: number | null = null;
+
+    console.log(`\n🚀 [PERFORMANCE] Starting RAG stream: "${question.substring(0, 50)}${question.length > 50 ? '...' : ''}"`);
+
     const agent = await initializeRAGAgent(config);
 
-    const stream = await agent.stream(
+    // Use streamEvents to get proper token-by-token streaming
+    const eventStream = agent.streamEvents(
       {
         messages: [
           {
@@ -123,18 +174,39 @@ export async function* streamRAGAgent(
           },
         ],
       },
-      { streamMode: 'messages' }
+      { version: 'v2' }
     );
 
-    for await (const chunk of stream) {
-      const chunkContent = (chunk as any).content;
-      if (chunkContent) {
-        const content = typeof chunkContent === 'string' 
-          ? chunkContent 
-          : JSON.stringify(chunkContent);
-        yield content;
+    for await (const event of eventStream) {
+      // Stream tokens from the chat model
+      if (event.event === 'on_chat_model_stream') {
+        const chunk = event.data?.chunk;
+        if (chunk?.content) {
+          if (firstChunkTime === null) {
+            firstChunkTime = performance.now() - streamStart;
+            console.log(`⏱️  [PERFORMANCE] Time to First Chunk: ${firstChunkTime.toFixed(2)}ms`);
+          }
+          
+          const content = typeof chunk.content === 'string' 
+            ? chunk.content 
+            : JSON.stringify(chunk.content);
+          
+          if (content) {
+            yield content;
+          }
+        }
       }
     }
+
+    // Log performance summary after stream completes
+    const totalStreamTime = performance.now() - streamStart;
+    const retrievalTimeMs = performanceState.lastRetrievalTimeMs;
+    
+    console.log(`\n📊 ========== STREAM PERFORMANCE SUMMARY ==========`);
+    console.log(`⏱️  Total Stream Time:    ${totalStreamTime.toFixed(2)}ms`);
+    console.log(`🔍 Retrieval Time:        ${retrievalTimeMs.toFixed(2)}ms`);
+    console.log(`⚡ Time to First Chunk:   ${firstChunkTime?.toFixed(2) || 'N/A'}ms`);
+    console.log(`📊 ==================================================\n`);
   } catch (error) {
     console.error('RAG Agent stream error:', error);
     throw new Error(

@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { queryRAGAgentServerAction } from '@/app/actions/queryRAGAgentServerAction';
 import { Bot, X, Send, Sparkles, Briefcase, Code, Award, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,7 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestedPages?: PageSuggestion[];
+  isStreaming?: boolean;
 }
 
 const suggestedQuestions = [
@@ -51,23 +53,48 @@ export function Copilot() {
     {
       id: '1',
       role: 'assistant',
-      content: `Hey! 👋 I'm Amine Buddy, your friendly guide to Amine's portfolio. I know all about his skills, experience at Intelswift, projects, and the tech he works with.\n\nWhether you're a CEO, recruiter, or just exploring ask me anything! What would you like to know?`,
+      content: `Hey! 👋 I'm **Amine Buddy**, your friendly guide to Amine's portfolio.
+
+I know all about his:
+- **Skills** & technologies
+- **Experience** at Intelswift
+- **Projects** & achievements
+
+Whether you're a *CEO*, *recruiter*, or just exploring — ask me anything!`,
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const widgetRef = React.useRef<HTMLDivElement>(null);
   const buttonContainerRef = React.useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = React.useRef(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Check if user is near the bottom (within 100px threshold)
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
+
+  // Handle scroll events to track if user has scrolled up
+  const handleScroll = () => {
+    shouldAutoScrollRef.current = isNearBottom();
+  };
+
   React.useEffect(() => {
-    scrollToBottom();
+    // Only auto-scroll if user is near the bottom
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   React.useEffect(() => {
@@ -143,35 +170,102 @@ export function Copilot() {
       timestamp: new Date(),
     };
 
+    const assistantMessageId = (Date.now() + 1).toString();
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    // Reset auto-scroll when user sends a new message
+    shouldAutoScrollRef.current = true;
+
+    // Create an initial empty assistant message for streaming
+    const streamingMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+    setMessages((prev) => [...prev, streamingMessage]);
 
     try {
-      const result = await queryRAGAgentServerAction(questionToSubmit);
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: result.success 
-          ? (result.answer || 'I apologize, but I could not generate a response. Please try rephrasing your question.')
-          : `I apologize, but I encountered an issue: ${result.error}. Please try rephrasing your question or explore the portfolio pages directly.`,
-        timestamp: new Date(),
-      };
+      const response = await fetch('/api/rag-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: questionToSubmit }),
+      });
 
-      if (result.success && result.suggestedPages) {
-        assistantMessage.suggestedPages = result.suggestedPages;
+      if (!response.ok) {
+        throw new Error('Failed to get response');
       }
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+      let suggestedPages: PageSuggestion[] = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'chunk' && data.content) {
+                  accumulatedContent += data.content;
+                  // Update the streaming message with new content
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: accumulatedContent }
+                        : msg
+                    )
+                  );
+                } else if (data.type === 'suggestions' && data.pages) {
+                  suggestedPages = data.pages;
+                } else if (data.type === 'error') {
+                  throw new Error(data.message);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        }
+      }
+
+      // Finalize the message
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: accumulatedContent || 'I apologize, but I could not generate a response. Please try rephrasing your question.',
+                isStreaming: false,
+                suggestedPages: suggestedPages.length > 0 ? suggestedPages : undefined,
+              }
+            : msg
+        )
+      );
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error while processing your request. Please try again, or feel free to explore the portfolio pages for more information.',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      // Update the streaming message with error
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: 'I apologize, but I encountered an error while processing your request. Please try again, or feel free to explore the portfolio pages for more information.',
+                isStreaming: false,
+              }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -256,7 +350,11 @@ export function Copilot() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar min-h-0">
+        <div 
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar min-h-0"
+        >
           {messages.length === 1 && (
             <div className="space-y-2 mb-4">
               <p className="text-xs font-medium text-muted-foreground px-1 mb-2">Suggested Questions:</p>
@@ -308,7 +406,62 @@ export function Copilot() {
                     'word-break break-words'
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">{message.content}</p>
+                  {message.role === 'user' ? (
+                    <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">{message.content}</p>
+                  ) : (
+                    <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-wrap-anywhere leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                      {message.content ? (
+                        <>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              em: ({ children }) => <em className="italic">{children}</em>,
+                              code: ({ children, className }) => {
+                                const isInline = !className;
+                                return isInline ? (
+                                  <code className="bg-background/50 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                                ) : (
+                                  <code className="block bg-background/50 p-2 rounded text-xs font-mono overflow-x-auto my-2">{children}</code>
+                                );
+                              },
+                              pre: ({ children }) => <pre className="bg-background/50 p-2 rounded overflow-x-auto my-2">{children}</pre>,
+                              a: ({ href, children }) => (
+                                <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">
+                                  {children}
+                                </a>
+                              ),
+                              h1: ({ children }) => <h1 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-sm font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>,
+                              blockquote: ({ children }) => (
+                                <blockquote className="border-l-2 border-primary/50 pl-3 italic my-2">{children}</blockquote>
+                              ),
+                              hr: () => <hr className="border-border my-3" />,
+                              table: ({ children }) => (
+                                <div className="overflow-x-auto my-2">
+                                  <table className="min-w-full border-collapse text-xs">{children}</table>
+                                </div>
+                              ),
+                              th: ({ children }) => <th className="border border-border px-2 py-1 bg-background/50 font-semibold">{children}</th>,
+                              td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                          {message.isStreaming && (
+                            <span className="inline-block w-1.5 h-4 bg-primary animate-pulse ml-0.5 align-middle rounded-sm" />
+                          )}
+                        </>
+                      ) : message.isStreaming ? (
+                        <span className="inline-block w-1.5 h-4 bg-primary animate-pulse rounded-sm" />
+                      ) : null}
+                    </div>
+                  )}
                 </div>
                 {message.role === 'user' && (
                   <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -341,7 +494,7 @@ export function Copilot() {
               )}
             </div>
           ))}
-          {isLoading && (
+          {isLoading && !messages.some(m => m.isStreaming && m.content) && (
             <div className="flex gap-3 justify-start">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <Bot className="h-4 w-4 text-primary" />

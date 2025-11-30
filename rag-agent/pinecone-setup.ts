@@ -44,7 +44,7 @@ export async function getVectorStore(): Promise<PineconeStore> {
   }
 
   const embeddings = new OpenAIEmbeddings({
-    model: 'text-embedding-3-large',
+    model: 'text-embedding-3-small',
     openAIApiKey: ragConfig.model.apiKey,
     dimensions:256
   });

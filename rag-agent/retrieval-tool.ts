@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { tool } from 'langchain';
 import { getVectorStore } from './pinecone-setup';
 import { ragConfig } from './config';
+import { performanceState } from './types';
 
 /**
  * Creates a retrieval tool that searches the Pinecone vector store
@@ -16,11 +17,21 @@ export async function createRetrievalTool() {
   return tool(
     async ({ query }) => {
       try {
+        // Start timing retrieval
+        const retrievalStart = performance.now();
+
         // Perform similarity search
         const results = await vectorStore.similaritySearch(
           query,
           ragConfig.retrieval.topK
         );
+
+        // Calculate retrieval time
+        const retrievalTimeMs = performance.now() - retrievalStart;
+        performanceState.lastRetrievalTimeMs = retrievalTimeMs;
+
+        console.log(`\n📊 [PERFORMANCE] Pinecone Retrieval Time: ${retrievalTimeMs.toFixed(2)}ms`);
+        console.log(`📊 [PERFORMANCE] Documents Retrieved: ${results.length}`);
 
         // Format results for the agent
         if (results.length === 0) {
@@ -35,7 +46,7 @@ export async function createRetrievalTool() {
           })
           .join('\n\n---\n\n');
 
-          console.log('Retrieval results:', formattedResults);
+        console.log('Retrieval results:', formattedResults);
 
         return `Retrieved ${results.length} relevant document(s):\n\n${formattedResults}`;
       } catch (error) {
