@@ -121,14 +121,20 @@ export function Copilot() {
         }
       }
 
-      setMessages(prev => prev.map(m => 
-        m.id === assistantId ? { 
-          ...m, 
-          content: content || 'Sorry, I could not generate a response.',
-          isStreaming: false,
-          suggestedPages: pages.length > 0 ? pages : undefined,
-        } : m
-      ));
+      setMessages(prev => prev.map(m => {
+        if (m.id === assistantId) {
+          const updated: Message = {
+            ...m,
+            content: content || 'Sorry, I could not generate a response.',
+            isStreaming: false,
+          };
+          if (pages.length > 0) {
+            updated.suggestedPages = pages;
+          }
+          return updated;
+        }
+        return m;
+      }));
     } catch {
       setMessages(prev => prev.map(m => 
         m.id === assistantId ? { 
