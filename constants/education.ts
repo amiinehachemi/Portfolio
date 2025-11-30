@@ -14,7 +14,7 @@ export const education: TimelineViewerData[] = [
   },
   {
     title: 'Scrimba (Certified Frontend Developer)',
-    date: 'Apr. 2012 - Mar. 2021',
+    date: 'Apr. 2020 - Mar. 2021',
     description: `Completed a comprehensive frontend program centered on building modern web applications with React. Gained hands on experience with component architecture, hooks, routing, state management, and project based challenges. This training contributes to my ability to deliver complete full stack solutions by combining frontend interactivity with backend and AI driven systems.`,
   },
   {
