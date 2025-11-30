@@ -508,65 +508,6 @@ Whether you're a *CEO*, *recruiter*, or just exploring — ask me anything!`,
     await handleSubmitWithQuestion();
   };
 
-  // Mobile Drawer Content
-  const MobileDrawerContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div 
-        ref={messagesContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 no-scrollbar"
-      >
-        {messages.length === 1 && (
-          <SuggestedQuestions onSelect={handleQuestionClick} isMobile={true} />
-        )}
-        {messages.map((message) => (
-          <div key={message.id} className="space-y-3">
-            <MessageBubble message={message} isMobile={true} />
-            {message.role === 'assistant' && message.suggestedPages && message.suggestedPages.length > 0 && (
-              <PageSuggestions 
-                pages={message.suggestedPages} 
-                onClose={() => setIsOpen(false)} 
-                isMobile={true}
-              />
-            )}
-          </div>
-        ))}
-        {isLoading && !messages.some(m => m.isStreaming && m.content) && (
-          <LoadingIndicator isMobile={true} />
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <form onSubmit={handleSubmit} className="flex gap-3">
-          <Input
-            ref={mobileInputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about Amine..."
-            disabled={isLoading}
-            className="flex-1 h-12 text-base rounded-full px-5 bg-muted border-0 focus-visible:ring-2 focus-visible:ring-primary"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-          />
-          <Button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            className="h-12 w-12 rounded-full shrink-0 shadow-lg"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -614,8 +555,9 @@ Whether you're a *CEO*, *recruiter*, or just exploring — ask me anything!`,
       {/* Mobile Drawer */}
       {isMobile && (
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
-          <DrawerContent className="h-[85vh] max-h-[85vh]">
-            <DrawerHeader className="border-b border-border pb-3 flex-shrink-0">
+          <DrawerContent className="h-[80dvh] overflow-hidden" showHandle={true}>
+            {/* Header - Fixed */}
+            <DrawerHeader className="shrink-0 border-b border-border py-3 px-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -636,7 +578,61 @@ Whether you're a *CEO*, *recruiter*, or just exploring — ask me anything!`,
                 </DrawerClose>
               </div>
             </DrawerHeader>
-            <MobileDrawerContent />
+
+            {/* Messages - Scrollable area */}
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 no-scrollbar"
+            >
+              {messages.length === 1 && (
+                <SuggestedQuestions onSelect={handleQuestionClick} isMobile={true} />
+              )}
+              {messages.map((message) => (
+                <div key={message.id} className="space-y-3">
+                  <MessageBubble message={message} isMobile={true} />
+                  {message.role === 'assistant' && message.suggestedPages && message.suggestedPages.length > 0 && (
+                    <PageSuggestions 
+                      pages={message.suggestedPages} 
+                      onClose={() => setIsOpen(false)} 
+                      isMobile={true}
+                    />
+                  )}
+                </div>
+              ))}
+              {isLoading && !messages.some(m => m.isStreaming && m.content) && (
+                <LoadingIndicator isMobile={true} />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input - Fixed at bottom */}
+            <div className="shrink-0 border-t border-border bg-background p-3 safe-area-bottom">
+              <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+                <Input
+                  ref={mobileInputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask about Amine..."
+                  disabled={isLoading}
+                  className="flex-1 h-11 text-base rounded-full px-4 bg-muted border-0 focus-visible:ring-2 focus-visible:ring-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                />
+                <Button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  size="icon"
+                  className="h-11 w-11 rounded-full shrink-0"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </form>
+            </div>
           </DrawerContent>
         </Drawer>
       )}

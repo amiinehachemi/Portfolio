@@ -179,6 +179,14 @@
     scrollbar-width: none; /* Firefox */
   }
 
+  /* Safe area padding for notched phones (iPhone X+, etc.) */
+  .safe-area-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .safe-area-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+
   .border-grid {
     @apply border-dashed border-border/50 dark:border-border;
   }
